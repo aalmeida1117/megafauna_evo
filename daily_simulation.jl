@@ -7,6 +7,8 @@ using UnicodePlots
 include("allometric_functions.jl")
 using .AllometricFunctions
 ##com reaction plane
+
+#hello 
 function dailysim(mass, patch, fisio_type)
     ### 1 = closed habitat
     ### 2 = open habitat
