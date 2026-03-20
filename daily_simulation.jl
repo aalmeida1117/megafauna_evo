@@ -350,6 +350,7 @@ end
 println("\n=== INICIANDO SIMULAÇÕES ===")
 
 @threads for mu in mu_values
+    println("mu=$(round(mu, sigdigits=4)) rodando na thread $(Threads.threadid())")
     mu_str = string(round(mu; sigdigits = 4))
     mass_dict = Dict()
     for (idx, mass) in enumerate(masses)
