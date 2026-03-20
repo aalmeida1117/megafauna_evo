@@ -3,7 +3,7 @@ using JSON3
 using Dates
 using LinearAlgebra
 using ProgressMeter
-
+using Base.Threads
 # Carrega funções auxiliares usadas no cálculo de energia, volume gástrico etc.
 include("allometric_functions.jl")
 using .AllometricFunctions
@@ -137,20 +137,23 @@ exp_step = parse(Float64, ARGS[4])
 
 S = Dict()
 T = Dict()
-
+###
 # Carrega dados de entrada
 script_dir = @__DIR__
 data_dir = joinpath(script_dir, "data")
-input_file = joinpath(data_dir, "$(fisio_type)_dict.json")
+#input_file = joinpath(data_dir, "$(fisio_type)_dict.json")
+mu_files = filter(f -> startswith(f, "$(fisio_type)_mu") && endswith(f, "_dict.json"), readdir(data_dir))
+# if !isfile(input_file)
+#     println("Erro: Arquivo de entrada '$(input_file)' não encontrado.")
+#     println("Por favor, certifique-se de que o arquivo JSON está em $(data_dir).")
+#     exit(1)
+# end
 
-if !isfile(input_file)
-    println("Erro: Arquivo de entrada '$(input_file)' não encontrado.")
-    println("Por favor, certifique-se de que o arquivo JSON está em $(data_dir).")
+if isempty(mu_files)
+    println("Erro: Nenhum arquivo mu encontrado em $(data_dir).")
     exit(1)
 end
-
-println("Carregando dados de entrada de: $(input_file)")
-mass_dict = JSON3.read(input_file, Dict)
+#mass_dict = JSON3.read(input_file, Dict)
 
 # Cria lista de massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
@@ -164,13 +167,36 @@ println("\nProcessando $(length(masses)) massas...")
 progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
 
 # MUDANÇA: Arredonda a massa antes de usar como chave
-for mass in masses
-    mass_rounded = round(mass; digits=2)  # <- NOVA LINHA
-    S[mass_rounded], T[mass_rounded] = runSDP(mass, mass_dict)
-    next!(progress, showvalues = [(:massa_atual, mass_rounded)])
-end
+@threads for mu_file in mu_files
+    # extrai o valor de mu do nome do arquivo
+    mu_str = replace(mu_file, "$(fisio_type)_mu" => "", "_dict.json" => "")
 
-finish!(progress)
+    # cada thread carrega e processa seu próprio arquivo
+    mass_dict_local = JSON3.read(joinpath(data_dir, mu_file), Dict)
+
+    S_local = Dict()
+    T_local = Dict()
+    
+    # for mass in masses
+    #     mass_rounded = round(mass; digits=2)  # <- NOVA LINHA
+    #     S[mass_rounded], T[mass_rounded] = runSDP(mass, mass_dict)
+    #     next!(progress, showvalues = [(:massa_atual, mass_rounded)])
+    # end
+    for mass in masses
+        mass_rounded = round(mass; digits=2)  # <- NOVA LINHA
+        S_local[mass_rounded], T_local[mass_rounded] = runSDP(mass, mass_dict_local)
+    end
+
+    #finish!(progress)
+
+    # salva um arquivo de saída por mu
+    output_file = joinpath(data_dir, "SDP_$(fisio_type)_mu$(mu_str).json")
+    S_out = prepare_output_dict(S_local)
+    T_out = prepare_output_dict(T_local)
+    JSON3.write(output_file, Dict("S" => S_out, "T"=> T_out))
+    println("✓ mu=$mu_str salvo em $(output_file)")
+
+end
 
 # ============================================================
 # Salvando resultados
@@ -193,12 +219,12 @@ function prepare_output_dict(dict::Dict)
     return out
 end
 
-println("\nPreparando dados para salvar...")
-S_out = prepare_output_dict(S)
-T_out = prepare_output_dict(T)
+# println("\nPreparando dados para salvar...")
+# S_out = prepare_output_dict(S)
+# T_out = prepare_output_dict(T)
 
-# Salva saída
-output_file = joinpath(data_dir, "SDP_$(fisio_type)_$(Dates.format(now(), "yyyymmdd")).json")
-println("Salvando resultados...")
-JSON3.write(output_file, Dict("S" => S_out, "T" => T_out))
-println("\n✓ Programa terminado. Resultados salvos em $(output_file)")
+# # Salva saída
+# output_file = joinpath(data_dir, "SDP_$(fisio_type)_$(Dates.format(now(), "yyyymmdd")).json")
+# println("Salvando resultados...")
+# JSON3.write(output_file, Dict("S" => S_out, "T" => T_out))
+# println("\n✓ Programa terminado. Resultados salvos em $(output_file)")
