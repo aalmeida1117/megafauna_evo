@@ -2,14 +2,14 @@ using Distributions
 using JSON3
 using Dates
 using LinearAlgebra
-using UnicodePlots
+using Base.Threads 
 
 include("allometric_functions.jl")
 using .AllometricFunctions
 ##com reaction plane
 
 #hello 
-function dailysim(mass, patch, fisio_type)
+function dailysim(mass, patch, fisio_type, mu)
     ### 1 = closed habitat
     ### 2 = open habitat
     velocity = find_velocity(mass) # Velocidade do forrageador em m/s
@@ -58,8 +58,8 @@ function dailysim(mass, patch, fisio_type)
 
     if fisio_type == "mixed"
         #res_traits p/ grazers
-        res_traits_g=  [mu=0.0008 alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
-                        mu= 0.0008 alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
+        res_traits_g=  [mu=mu alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
+                        mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
 
         mu_g = res_traits_g[patch,1]
         alpha_g= res_traits_g[patch, 2]
@@ -68,8 +68,8 @@ function dailysim(mass, patch, fisio_type)
         zeta_g = res_traits_g[patch, 5]
 
         #res_traits p/ browser
-        res_traits_b=  [mu=0.0008 alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
-                        mu= 0.0008 alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];               
+        res_traits_b=  [mu=mu alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
+                        mu=mu alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];               
         
         mu_b = res_traits_b[patch, 1]
         alpha_b = res_traits_b[patch, 2]
@@ -186,13 +186,13 @@ function dailysim(mass, patch, fisio_type)
 
     else
         if fisio_type == "grazers" 
-            res_traits= [mu=0.0008 alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
-                        mu= 0.0008 alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
+            res_traits= [mu=mu alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
+                        mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
         
         
         elseif fisio_type == "browsers" 
-            res_traits= [mu=0.0008 alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
-                        mu= 0.0008 alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];
+            res_traits= [mu=mu alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
+                        mu=mu alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];
         
         end
 
@@ -290,6 +290,11 @@ habitats = [1, 2]  # 1 = fechado, 2 = aberto
 # Gera as massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
 masses = 10 .^ collect(exp_start:exp_step:exp_end)
+mu_values = range(0.0001, 0.001, length = 80)
+
+# Garante que a pasta existe antes das threads escreverem
+isdir("data") || mkpath("data")
+
 
 # println("\n=== PARÂMETROS DA SIMULAÇÃO ===")
 # println("Expoente inicial: ", exp_start)
@@ -343,80 +348,93 @@ end
 # ========== LOOP DE SIMULAÇÃO (escala log10) ==========
 
 println("\n=== INICIANDO SIMULAÇÕES ===")
-for (idx, mass) in enumerate(masses)
-    println("\n" * "="^50)
-    println("MASSA $(idx)/$(length(masses)): $(round(mass; digits=4)) kg")
-    println("Expoente: 10^$(exponents[idx])")
-    println("="^50)
-    
-    # Converte massa para string para usar como chave (evita problemas de precisão float)
-    mass_key = string(round(mass; digits=2))
-    mass_dict[mass_key] = Dict()
 
-    for patch in habitats
-        # patch_name = patch == 1 ? "fechado" : "aberto"
-        # println("\n  → Habitat $(patch_name) (patch=$patch)")
+@threads for mu in mu_values
+    mu_str = string(round(mu; sigdigits = 4))
+    mass_dict = Dict()
+    for (idx, mass) in enumerate(masses)
+        println("\n" * "="^50)
+        println("MASSA $(idx)/$(length(masses)): $(round(mass; digits=4)) kg")
+        println("Expoente: 10^$(exponents[idx])")
+        println("="^50)
         
-        mass_dict[mass_key][patch] = Dict()
-        gains = Float64[]
-        costs = Float64[]
+        # Converte massa para string para usar como chave (evita problemas de precisão float)
+        mass_key = string(round(mass; digits=2))
+        mass_dict[mass_key] = Dict()
 
-        for config in 1:n_configs
-            if config % 5000 == 0
-                # print("    Progresso: $(config)/$(n_configs)\r")
-                flush(stdout)
-            end
+        for patch in habitats
+            # patch_name = patch == 1 ? "fechado" : "aberto"
+            # println("\n  → Habitat $(patch_name) (patch=$patch)")
             
-            try
-                total_mcal, _, cost_mcal = dailysim(mass, patch, fisio_type)
-                push!(gains, total_mcal)
-                push!(costs, cost_mcal)
-            catch e
-                println("\n    ❌ ERRO na config $config:")
-                println("       ", e)
-                rethrow(e)
+            mass_dict[mass_key][patch] = Dict()
+            gains = Float64[]
+            costs = Float64[]
+
+            for config in 1:n_configs
+                if config % 5000 == 0
+                    # print("    Progresso: $(config)/$(n_configs)\r")
+                    flush(stdout)
+                end
+                
+                try
+                    total_mcal, _, cost_mcal = dailysim(mass, patch, fisio_type,mu)
+                    push!(gains, total_mcal)
+                    push!(costs, cost_mcal)
+                catch e
+                    println("\n    ❌ ERRO na config $config:")
+                    println("       ", e)
+                    rethrow(e)
+                end
             end
+            # println("    Progresso: $(n_configs)/$(n_configs) ✓")
+            
+            #println("    Calculando histogramas...")
+            gains_bin_edges, gains_bin_counts = calculate_histogram(gains, nbins)
+            costs_bin_edges, costs_bin_counts = calculate_histogram(costs, nbins)
+
+            gains_probabilities = gains_bin_counts / sum(gains_bin_counts)
+            costs_probabilities = costs_bin_counts / sum(costs_bin_counts)
+
+            gains_bin_midpoints = (gains_bin_edges[1:end-1] + gains_bin_edges[2:end]) / 2
+            costs_bin_midpoints = (costs_bin_edges[1:end-1] + costs_bin_edges[2:end]) / 2
+
+            gain_cost_pairs = [(gains[i], costs[i]) for i in 1:length(gains)]
+            gain_bins = range(minimum(gains), maximum(gains), length=nbins)
+            cost_bins = range(minimum(costs), maximum(costs), length=nbins)
+
+            joint_histogram = zeros(Int, nbins, nbins)
+
+            for pair in gain_cost_pairs
+                gain_bin_index = find_bin_index(pair[1], gain_bins)
+                cost_bin_index = find_bin_index(pair[2], cost_bins)
+                joint_histogram[gain_bin_index, cost_bin_index] += 1
+            end
+
+            joint_probabilities = joint_histogram / sum(joint_histogram)
+
+            mass_dict[mass_key][patch]["gains"] = collect(gain_bins)
+            mass_dict[mass_key][patch]["costs"] = collect(cost_bins)
+            mass_dict[mass_key][patch]["prob"]  = joint_probabilities
+            
+            #println("    ✓ Habitat $(patch_name) concluído")
         end
-        # println("    Progresso: $(n_configs)/$(n_configs) ✓")
         
-        #println("    Calculando histogramas...")
-        gains_bin_edges, gains_bin_counts = calculate_histogram(gains, nbins)
-        costs_bin_edges, costs_bin_counts = calculate_histogram(costs, nbins)
-
-        gains_probabilities = gains_bin_counts / sum(gains_bin_counts)
-        costs_probabilities = costs_bin_counts / sum(costs_bin_counts)
-
-        gains_bin_midpoints = (gains_bin_edges[1:end-1] + gains_bin_edges[2:end]) / 2
-        costs_bin_midpoints = (costs_bin_edges[1:end-1] + costs_bin_edges[2:end]) / 2
-
-        gain_cost_pairs = [(gains[i], costs[i]) for i in 1:length(gains)]
-        gain_bins = range(minimum(gains), maximum(gains), length=nbins)
-        cost_bins = range(minimum(costs), maximum(costs), length=nbins)
-
-        joint_histogram = zeros(Int, nbins, nbins)
-
-        for pair in gain_cost_pairs
-            gain_bin_index = find_bin_index(pair[1], gain_bins)
-            cost_bin_index = find_bin_index(pair[2], cost_bins)
-            joint_histogram[gain_bin_index, cost_bin_index] += 1
-        end
-
-        joint_probabilities = joint_histogram / sum(joint_histogram)
-
-        mass_dict[mass_key][patch]["gains"] = collect(gain_bins)
-        mass_dict[mass_key][patch]["costs"] = collect(cost_bins)
-        mass_dict[mass_key][patch]["prob"]  = joint_probabilities
-        
-        #println("    ✓ Habitat $(patch_name) concluído")
+        println("\n✓ Massa $(mass_key) kg processada completamente")
     end
-    
-    println("\n✓ Massa $(mass_key) kg processada completamente")
+    output_file = joinpath("data", "$(fisio_type)_mu$(mu_str)_dict.json")
+    JSON3.write(output_file, mass_dict)
+    println("✓ mu=$mu_str salvo em $output_file")
 end
 
-
 # ========== SALVAR SAÍDA ==========
-isdir("data") || mkpath("data")
-output_file = joinpath("data", "$(fisio_type)_dict.json")
-JSON3.write(output_file, mass_dict)
+# isdir("data") || mkpath("data")
+# output_file = joinpath("data", "$(fisio_type)_mu$(mu_str)_dict.json")
+# JSON3.write(output_file, mass_dict)
 
-println("\nSimulação finalizada! Resultados salvos em $(output_file).")
+#println("\nSimulação finalizada! Resultados salvos em $(output_file).")
+
+
+## como rodar:
+#julia --threads 80 daily_simulation_mu.jl 1 3 0.25 20000 grazers
+# ou, se tiver menos núcleos:
+#julia --threads auto daily_simulation_mu.jl 1 3 0.25 20000 grazers
