@@ -122,6 +122,27 @@ end
 
 
 # ============================================================
+# Salvando resultados
+# ============================================================
+function convert_array_3d_to_nested_vector(A::Array{Float64, 3})
+    return [[[A[i, j, k] for k in 1:size(A, 3)] for j in 1:size(A, 2)] for i in 1:size(A, 1)]
+end
+
+function prepare_output_dict(dict::Dict)
+    out = Dict()
+    for (k, arr) in dict
+        if isa(arr, Array{Float64, 3})
+            # MUDANÇA: Garante que a chave seja string com 2 casas decimais
+            mass_str = string(round(k; digits=2))  # <- MODIFICADO
+            out[mass_str] = convert_array_3d_to_nested_vector(arr)
+        else
+            @warn "O valor para a chave '$k' não é um Array{Float64, 3}. Tipo: $(typeof(arr)). Pulando."
+        end
+    end
+    return out
+end
+
+# ============================================================
 # Parâmetros via terminal (escala log10)
 # ============================================================
 if length(ARGS) < 4
@@ -164,11 +185,14 @@ println("Valores numéricos de massa: ", round.(masses; digits=2))
 
 # Cria barra de progresso
 println("\nProcessando $(length(masses)) massas...")
-progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
+#progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
+
 
 # MUDANÇA: Arredonda a massa antes de usar como chave
 @threads for mu_file in mu_files
     # extrai o valor de mu do nome do arquivo
+    println("mu=$(round(mu, sigdigits=4)) rodando na thread $(Threads.threadid())")
+
     mu_str = replace(mu_file, "$(fisio_type)_mu" => "", "_dict.json" => "")
 
     # cada thread carrega e processa seu próprio arquivo
@@ -183,8 +207,9 @@ progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
     #     next!(progress, showvalues = [(:massa_atual, mass_rounded)])
     # end
     for mass in masses
-        mass_rounded = round(mass; digits=2)  # <- NOVA LINHA
+        mass_rounded = round(mass; digits=2)
         S_local[mass_rounded], T_local[mass_rounded] = runSDP(mass, mass_dict_local)
+        println("  [mu=$mu_str] massa $mass_rounded concluída (thread $(Threads.threadid()))")
     end
 
     #finish!(progress)
@@ -198,26 +223,6 @@ progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
 
 end
 
-# ============================================================
-# Salvando resultados
-# ============================================================
-function convert_array_3d_to_nested_vector(A::Array{Float64, 3})
-    return [[[A[i, j, k] for k in 1:size(A, 3)] for j in 1:size(A, 2)] for i in 1:size(A, 1)]
-end
-
-function prepare_output_dict(dict::Dict)
-    out = Dict()
-    for (k, arr) in dict
-        if isa(arr, Array{Float64, 3})
-            # MUDANÇA: Garante que a chave seja string com 2 casas decimais
-            mass_str = string(round(k; digits=2))  # <- MODIFICADO
-            out[mass_str] = convert_array_3d_to_nested_vector(arr)
-        else
-            @warn "O valor para a chave '$k' não é um Array{Float64, 3}. Tipo: $(typeof(arr)). Pulando."
-        end
-    end
-    return out
-end
 
 # println("\nPreparando dados para salvar...")
 # S_out = prepare_output_dict(S)
