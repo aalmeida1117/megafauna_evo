@@ -196,7 +196,8 @@ println("\nProcessando $(length(masses)) massas...")
     println("mu=$mu_str rodando na thread $(Threads.threadid())")
 
     # cada thread carrega e processa seu próprio arquivo
-    mass_dict_local = JSON3.read(joinpath(data_dir, mu_file), Dict)
+    # ADICIONA essa linha logo após o JSON3.read
+    mass_dict_local = JSON3.read(joinpath(data_dir, mu_file), Dict{String, Any})
 
     S_local = Dict()
     T_local = Dict()
