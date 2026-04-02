@@ -189,9 +189,9 @@ println("\nProcessando $(length(masses)) massas...")
 
 
 # MUDANÇA: Arredonda a massa antes de usar como chave
-@threads for mu_file in mu_files
+#@threads for mu_file in mu_files
     # extrai o valor de mu do nome do arquivo
-    
+for mu_file in mu_files   
     mu_str = replace(mu_file, "$(fisio_type)_mu" => "", "_dict.json" => "")
     println("mu=$mu_str rodando na thread $(Threads.threadid())")
 
