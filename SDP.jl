@@ -156,27 +156,19 @@ exp_start = parse(Float64, ARGS[2])
 exp_end = parse(Float64, ARGS[3])
 exp_step = parse(Float64, ARGS[4])
 
-S = Dict()
-T = Dict()
-###
-# Carrega dados de entrada
+
+
+# ============================================================
+# Carrega a lista de arquivos de entrada (um por valor de mu)
+# ============================================================
 script_dir = @__DIR__
 data_dir = joinpath(script_dir, "data")
-input_file = joinpath(data_dir, "$(fisio_type)_mu0.00044_dict.json")
 mu_files = filter(f -> startswith(f, "$(fisio_type)_mu") && endswith(f, "_dict.json"), readdir(data_dir))
-if !isfile(input_file)
-    println("Erro: Arquivo de entrada '$(input_file)' não encontrado.")
-    println("Por favor, certifique-se de que o arquivo JSON está em $(data_dir).")
-    exit(1)
-end
-
-mass_dict = JSON3.read(input_file, Dict)
 
 if isempty(mu_files)
-    println("Erro: Nenhum arquivo mu encontrado em $(data_dir).")
+    println("Erro: Nenhum arquivo '$(fisio_type)_mu*_dict.json' encontrado em $(data_dir).")
     exit(1)
 end
-mass_dict = JSON3.read(input_file, Dict)
 
 # Cria lista de massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
@@ -184,54 +176,38 @@ masses = 10 .^ exponents
 
 println("\nMassas (10^x): ", exponents)
 println("Valores numéricos de massa: ", round.(masses; digits=2))
+println("\nArquivos de mu encontrados ($(length(mu_files))): ", mu_files)
+println("Threads disponíveis: ", Threads.nthreads())
 
-# Cria barra de progresso
-println("\nProcessando $(length(masses)) massas...")
-progress = Progress(length(masses), desc="Calculando SDP: ", barlen=50)
+# Barra de progresso: uma unidade por (mu, massa)
+println("\nProcessando $(length(masses)) massas × $(length(mu_files)) valores de mu...")
+progress = Progress(length(masses) * length(mu_files), desc="Calculando SDP: ", barlen=50)
 
-
-# MUDANÇA: Arredonda a massa antes de usar como chave
+# ============================================================
+# Cada thread processa um arquivo de mu
+# ============================================================
 @threads for mu_file in mu_files
-    # extrai o valor de mu do nome do arquivo
-    
+    # extrai o valor de mu do nome do arquivo (ex: grazers_mu0.00044_dict.json -> 0.00044)
     mu_str = replace(mu_file, "$(fisio_type)_mu" => "", "_dict.json" => "")
-    println("mu=$mu_str rodando na thread $(Threads.threadid())")
 
-    cada thread carrega e processa seu próprio arquivo
-mass_dict_local = JSON3.read(joinpath(data_dir, mu_file), Dict)
+    # cada thread carrega e processa seu próprio arquivo
+    mass_dict_local = JSON3.read(joinpath(data_dir, mu_file), Dict)
 
-S_local = Dict()
-T_local = Dict()
+    S_local = Dict()
+    T_local = Dict()
 
-# for mass in masses
-#     mass_rounded = round(mass; digits=2)  # <- NOVA LINHA
-#     S[mass_rounded], T[mass_rounded] = runSDP(mass, mass_dict)
-#     next!(progress, showvalues = [(:massa_atual, mass_rounded)])
-# end
-for mass in masses
-    mass_rounded = round(mass; digits=2)
-    S_local[mass_rounded], T_local[mass_rounded] = runSDP(mass, mass_dict_local)
-    println("  [mu=$mu_str] massa $mass_rounded concluída (thread $(Threads.threadid()))")
-
-
-    finish!(progress)
+    for mass in masses
+        mass_rounded = round(mass; digits=2)
+        S_local[mass_rounded], T_local[mass_rounded] = runSDP(mass, mass_dict_local)
+        next!(progress)
+    end
 
     # salva um arquivo de saída por mu
     output_file = joinpath(data_dir, "SDP_$(fisio_type)_mu$(mu_str).json")
     S_out = prepare_output_dict(S_local)
     T_out = prepare_output_dict(T_local)
-    JSON3.write(output_file, Dict("S" => S_out, "T"=> T_out))
-    println("✓ mu=$mu_str salvo em $(output_file)")
-
+    JSON3.write(output_file, Dict("S" => S_out, "T" => T_out))
 end
 
-
-# println("\nPreparando dados para salvar...")
-# S_out = prepare_output_dict(S)
-# T_out = prepare_output_dict(T)
-
-# # Salva saída
-# output_file = joinpath(data_dir, "SDP_$(fisio_type)_$(Dates.format(now(), "yyyymmdd")).json")
-# println("Salvando resultados...")
-# JSON3.write(output_file, Dict("S" => S_out, "T" => T_out))
-# println("\n✓ Programa terminado. Resultados salvos em $(output_file)")
+finish!(progress)
+println("\n✓ Programa terminado. Um arquivo SDP_$(fisio_type)_mu*.json salvo por valor de mu em $(data_dir).")
