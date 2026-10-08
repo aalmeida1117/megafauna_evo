@@ -166,18 +166,22 @@ plot!(p, exponents_m, fitness_mixed,
     color = mixed_color
 )
 
-vline!(p, [log10(3.5)],
-    lw =2,
-    linestyle = :dash,
-    color = :red
-)
+# vline!(p, [log10(3.5)],
+#     lw =2,
+#     linestyle = :dash,
+#     color = :red
+# )
 
-vline!(p, [log10(6.5)],
-    lw =2,
-    linestyle = :dash,
-    color = :red
+# vline!(p, [log10(6.5)],
+#     lw =2,
+#     linestyle = :dash,
+#     color = :red
+# )
+vspan!(p, [log10(3.5), log10(10)],
+    color = :gray,
+    alpha = 0.2,
+    label = ""
 )
-
 # ============================================================
 # Salvando o gráfico
 # ============================================================

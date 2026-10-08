@@ -184,6 +184,6 @@ script_dir = @__DIR__
 results_dir = joinpath(script_dir, "results")
 isdir(results_dir) || mkpath(results_dir)
 
-output_image_file = joinpath(results_dir, "foraging_by_mass_$(run_date).png")
+output_image_file = joinpath(results_dir, "foraging_by_mass_$(run_date).svg")
 savefig(p, output_image_file)
 println("Gráfico salvo em $(output_image_file)")

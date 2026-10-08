@@ -139,7 +139,7 @@ end
 # ============================================================
 if length(ARGS) < 7
     println("Uso: julia analyze_SDP.jl <fisio_type_browser> <fisio_type_grazer> <fisio_type_mixed> <exp_start> <exp_end> <exp_step> <run_date>")
-    println("Exemplo: julia analyze_SDP.jl browsers grazers mixed 1 3 0.25 20251022")
+    println("Exemplo: julia sensibility_analysis.jl browsers grazers mixed 0 4 0.1 20260908")
     exit(1)
 end
 
@@ -163,65 +163,115 @@ masses_log10_b = exponents_b[2:end]
 masses_log10_g = exponents_g[2:end]
 masses_log10_m = exponents_m[2:end]
 
+println("ΔF/ΔM por massa → Browsers: $(collect(zip(round.(10 .^ masses_log10_b, digits=2), ΔFΔM_browsers))) | Grazers: $(collect(zip(round.(10 .^ masses_log10_g, digits=2), ΔFΔM_grazers))) | Mixed: $(collect(zip(round.(10 .^ masses_log10_m, digits=2), ΔFΔM_mixed)))")
+
 println("\n=== Gerando gráficos combinados ===")
 println("Tamanhos: Browsers=$(length(ΔZΔM_browsers)), Grazers=$(length(ΔZΔM_grazers)), Mixed=$(length(ΔZΔM_mixed))")
 
 # ============================================================
+# Configuração global de estilo (fonte, tamanhos, etc.)
+# ============================================================
+default(
+    fontfamily = "Helvetica",
+    guidefont  = font(18),
+    tickfont   = font(15),
+    legendfont = font(13),
+    dpi        = 600
+)
+
+# ============================================================
+# Paleta de cores (ColorBrewer Dark2)
+# ============================================================
+browser_color = "#1B9E77"
+grazer_color  = "#D95F02"
+mixed_color   = "#7570B3"
+
+# ============================================================
+# Xticks customizados (potências inteiras de 10)
+# ============================================================
+exp_start_int = Int(round(exp_start))
+exp_end_int   = Int(round(exp_end))
+xticks_values = collect(exp_start_int:exp_end_int)
+xticks_labels = ["10" * join(['\u2070','\u00B9','\u00B2','\u00B3','\u2074','\u2075','\u2076','\u2077','\u2078','\u2079'][d .+ 1] for d in digits(n)) for n in xticks_values]
+
+# ============================================================
 # GRÁFICO 1: ΔZ/ΔM (Comportamento) - TODAS AS CURVAS JUNTAS
 # ============================================================
-p1 = plot(masses_log10_b, ΔZΔM_browsers,
-          label="Browsers",
-          lw=2, 
-          marker=:circle,
-          color=:blue,
-          xlabel="Mass (log10)",
-          ylabel="ΔZ / Δ(log₁₀ M) (change in % open per log unit)",
-          title="Behavioral Sensitivity to Mass",
-          legend=:best,
-          size=(800, 600))
+# p1 = plot(masses_log10_b, ΔZΔM_browsers,
+#           label      = "Browsers",
+#           lw         = 5,
+#           marker     = :none,
+#           color      = browser_color,
+#           xlabel     = "Body mass (kg)",
+#           ylabel     = "ΔZ / Δ(log₁₀ M)",
+#           legend     = :best,
+#           size       = (800, 650),
+#           grid       = false,
+#           xlim       = (exp_start - 0.2, exp_end + 0.2),
+#           framestyle = :box,
+#           xticks     = (xticks_values, xticks_labels))
 
-plot!(p1, masses_log10_g, ΔZΔM_grazers, 
-      label="Grazers", 
-      lw=2, 
-      marker=:diamond,
-      color=:green)
+# plot!(p1, masses_log10_g, ΔZΔM_grazers,
+#       label  = "Grazers",
+#       lw     = 5,
+#       marker = :none,
+#       color  = grazer_color)
 
-plot!(p1, masses_log10_m, ΔZΔM_mixed, 
-      label="Mixed Feeders", 
-      lw=2, 
-      marker=:star5,
-      color=:orange)
+# plot!(p1, masses_log10_m, ΔZΔM_mixed,
+#       label  = "Mixed Feeders",
+#       lw     = 5,
+#       marker = :none,
+#       color  = mixed_color)
 
-hline!(p1, [0], color=:black, linestyle=:dash, label="", alpha=0.5)
+# hline!(p1, [0], color=:black, linestyle=:dash, label="", alpha=0.5, lw=2)
 
 # ============================================================
 # GRÁFICO 2: ΔF/ΔM (Fitness) - TODAS AS CURVAS JUNTAS
 # ============================================================
 p2 = plot(masses_log10_b, ΔFΔM_browsers,
-          label="Browsers",
-          lw=2,
-          marker=:circle,
-          color=:blue,
-          xlabel="Mass (log10)",
-          ylabel="ΔF / Δ(log₁₀ M) (change in fitness per log unit)",
-          title="Fitness Sensitivity to Mass",
-          legend=:best,
-          size=(800, 600))
+          #label      = "Browsers",
+          lw         = 5,
+          marker     = :none,
+          color      = browser_color,
+          xlabel     = "Body mass (kg)",
+          ylabel     = "ΔFitness / ΔMass",
+          legend     = :none,
+          size       = (800, 650),
+          grid       = false,
+          xlim       = (exp_start - 0.2, exp_end + 0.2),
+          framestyle = :box,
+          xticks     = (xticks_values, xticks_labels))
 
-plot!(p2, masses_log10_g, ΔFΔM_grazers, 
-      label="Grazers", 
-      lw=2,
-      marker=:diamond,
-      color=:green)
+plot!(p2, masses_log10_g, ΔFΔM_grazers,
+      #label  = "Grazers",
+      lw     = 5,
+      marker = :none,
+      color  = grazer_color)
 
-plot!(p2, masses_log10_m, ΔFΔM_mixed, 
-      label="Mixed Feeders", 
-      lw=2,
-      marker=:star5,
-      color=:orange)
+plot!(p2, masses_log10_m, ΔFΔM_mixed,
+      #label  = "Mixed Feeders",
+      lw     = 5,
+      marker = :none,
+      color  = mixed_color)
 
-hline!(p2, [0], color=:black, linestyle=:dash, label="", alpha=0.5)
+hline!(p2, [0], color=:black, linestyle=:dash, #label="", 
+        alpha=0.5, lw=2)
+# vline!(p2, [log10(3.5)],
+#     lw =2,
+#     linestyle = :dash,
+#     color = :red
+# )
 
+# vline!(p2, [log10(6.5)],
+#     lw =2,
+#     linestyle = :dash,
+#     color = :red
+# )
+vspan!(p2, [log10(3.5), log10(10)],
+    color = :gray,
+    alpha = 0.2,
+    label = ""
+)
 # ============================================================
 # Salvando os gráficos
 # ============================================================
@@ -229,12 +279,13 @@ script_dir = @__DIR__
 results_dir = joinpath(script_dir, "results")
 isdir(results_dir) || mkpath(results_dir)
 
-output_behavior = joinpath(results_dir, "ΔZ_combined_$(run_date).png")
-output_fitness = joinpath(results_dir, "ΔF_combined_$(run_date).png")
+#output_behavior = joinpath(results_dir, "ΔZ_combined_$(run_date).svg")
+output_fitness  = joinpath(results_dir, "ΔF_combined_$(run_date).svg")
 
-png(p1, output_behavior)
-png(p2, output_fitness)
 
-println("✓ Gráfico de comportamento (ΔZ) salvo: $(output_behavior)")
+#savefig(p1, output_behavior)
+savefig(p2, output_fitness)
+
+#println("✓ Gráfico de comportamento (ΔZ) salvo: $(output_behavior)")
 println("✓ Gráfico de fitness (ΔF) salvo: $(output_fitness)")
-println("\n✅ Análises concluídas com sucesso para todos os fisiotipos.")
+#println("\n✅ Análises concluídas com sucesso para todos os fisiotipos.")

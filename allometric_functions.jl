@@ -90,19 +90,19 @@ module AllometricFunctions
         return energy
     end
 
-    function mean_energy_closed(mass)
-        #enter mass in kg
-    #massg=mass*1000 #convert to grams
-        mean_edensity_closed=30*(mass^-0.24)#kcal
-        return mean_edensity_closed
-    end
+    # function mean_energy_closed(mass)
+    #     #enter mass in kg
+    # #massg=mass*1000 #convert to grams
+    #     mean_edensity_closed=30*(mass^-0.24)#kcal
+    #     return mean_edensity_closed
+    # end
 
-    function mean_energy_open(mass)
-        #enter mass in kg
-    #massg=mass*1000 #convert to grams
-        mean_edensity_open=20*(mass^-0.24)#kcal
-        return mean_edensity_open
-    end
+    # function mean_energy_open(mass)
+    #     #enter mass in kg
+    # #massg=mass*1000 #convert to grams
+    #     mean_edensity_open=20*(mass^-0.24)#kcal
+    #     return mean_edensity_open
+    # end
 
     #reaction distance
     function reactionwidth(mass)

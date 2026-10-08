@@ -15,6 +15,10 @@ function dailysim(mass, patch, fisio_type, mu)
     velocity = find_velocity(mass) # Velocidade do forrageador em m/s
     beta = bite_size_allo(mass)
 
+    edensity_browse = 4.6 #kcal/g
+    edensity_c3 = 1.1385 #kcal/g
+    edensity_c4 = 0.8625 #kcal/g
+
     if patch == 1 
         velocity = 0.5*velocity # Ajuste para habitat fechado
     end
@@ -58,25 +62,29 @@ function dailysim(mass, patch, fisio_type, mu)
 
     if fisio_type == "mixed"
         #res_traits p/ grazers
-        res_traits_g=  [mu=mu alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
+        # res_traits_g=  [mu=mu alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
+        #                 mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
 
+        res_traits_g=  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
+                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
         mu_g = res_traits_g[patch,1]
         alpha_g= res_traits_g[patch, 2]
-        mean_edensity_g = res_traits_g[patch, 3]
-        sd_edensity_g = res_traits_g[patch, 4]
-        zeta_g = res_traits_g[patch, 5]
+        edensity_g = res_traits_g[patch, 3]
+        #mean_edensity_g = res_traits_g[patch, 3]
+        #sd_edensity_g = res_traits_g[patch, 4]
+        zeta_g = res_traits_g[patch, 4]
 
         #res_traits p/ browser
-        res_traits_b=  [mu=mu alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
-                        mu=mu alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];               
+        res_traits_b=  [mu=mu alpha= 9 edensity = edensity_browse zeta= 1 d_pred = 0.0002;
+                        mu=mu alpha = 4.5 edensity = edensity_browse zeta = 2.2 d_pred = 0.0002;];               
         
         mu_b = res_traits_b[patch, 1]
         alpha_b = res_traits_b[patch, 2]
-        mean_edensity_b = res_traits_b[patch, 3]
-        sd_edensity_b = res_traits_b[patch, 4]
-        zeta_b = res_traits_b[patch, 5]
-        d_pred = res_traits_b[patch,6]
+        edensity_b = res_traits_b[patch, 3]
+        # mean_edensity_b = res_traits_b[patch, 3]
+        # sd_edensity_b = res_traits_b[patch, 4]
+        zeta_b = res_traits_b[patch,4]
+        d_pred = res_traits_b[patch,5]
         #edensity = Normal(mean_edensity, sd_edensity)
         #Reaction plane area
         
@@ -98,8 +106,8 @@ function dailysim(mass, patch, fisio_type, mu)
         alphaprime_g = alpha_g * na^(zeta_g - 2) #alpha para browsers
 
         
-        edensity_b = Truncated(Normal(mean_edensity_b, sd_edensity_b), lower, upper)
-        edensity_g = Truncated(Normal(mean_edensity_g, sd_edensity_g), lower, upper)
+        # edensity_b = Truncated(Normal(mean_edensity_b, sd_edensity_b), lower, upper)
+        # edensity_g = Truncated(Normal(mean_edensity_g, sd_edensity_g), lower, upper)
 
         # Inicialização de variáveis escalares
 
@@ -119,8 +127,8 @@ function dailysim(mass, patch, fisio_type, mu)
             cost_ws_g = field_mr * deltat_g
             cost_kcal_g = cost_ws_g*0.0002
             # Atualiza tempo e custos
-            kcal_food_b = rand(edensity_b)
-            kcal_food_g = rand(edensity_g)
+            kcal_food_b = edensity_b
+            kcal_food_g = edensity_g
 
             if (kcal_food_b-cost_kcal_b)>(kcal_food_g-cost_kcal_g)
 
@@ -186,23 +194,23 @@ function dailysim(mass, patch, fisio_type, mu)
 
     else
         if fisio_type == "grazers" 
-            res_traits= [mu=mu alpha= 4.5 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
-        
-        
+            res_traits =  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
+                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
+
         elseif fisio_type == "browsers" 
-            res_traits= [mu=mu alpha= 9 mean_edensity = mean_energy_closed(mass) sd_edensity = 2.8 zeta= 1 d_pred = 0.0002;
-                        mu=mu alpha = 4.5 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 2.2 d_pred = 0.0002;];
+            res_traits =  [mu=mu alpha= 9 edensity = edensity_browse zeta= 1 d_pred = 0.0002;
+                        mu=mu alpha = 4.5 edensity = edensity_browse zeta = 2.2 d_pred = 0.0002;];               
         
         end
 
         # Mover as definições para antes do uso
         mu = res_traits[patch, 1]
         alpha = res_traits[patch, 2]
-        mean_edensity = res_traits[patch, 3]
-        sd_edensity = res_traits[patch, 4]
-        zeta = res_traits[patch, 5]
-        d_pred = res_traits[patch,6]
+        edensity = res_traits[patch, 3]
+        #mean_edensity = res_traits[patch, 3]
+        #sd_edensity = res_traits[patch, 4]
+        zeta = res_traits[patch, 4]
+        d_pred = res_traits[patch,5]
         #edensity = Normal(mean_edensity, sd_edensity)
         #Reaction plane area
         width = reactionwidth(mass)
@@ -222,7 +230,7 @@ function dailysim(mass, patch, fisio_type, mu)
 
         alphaprime = alpha * na^(zeta - 2)
         # WATTS/KG
-        edensity = Truncated(Normal(mean_edensity, sd_edensity), lower, upper)
+        #edensity = Truncated(Normal(mean_edensity, sd_edensity), lower, upper)
         gammadist = Gamma(alphaprime, mprime / alphaprime)
         
 
@@ -253,7 +261,7 @@ function dailysim(mass, patch, fisio_type, mu)
                 gut += beta
                 cost_ws += field_mr * tchew + d_pred
                 GUT = gut
-                kcal_food = rand(edensity)
+                kcal_food = edensity
                 kcal_final += beta * kcal_food
             else
                 break
@@ -273,7 +281,7 @@ end
 # ========== PARÂMETROS VIA TERMINAL ==========
 if length(ARGS) < 5
     println("Uso: julia daily_simulation.jl exp_start exp_end exp_step n_configs fisio_type")
-    println("Ex: julia daily_simulation.jl 1 3 0.25 20000 grazers")
+    println("Ex: julia daily_simulation.jl 0 4 0.1 20000 grazers")
     exit(1)
 end
 
@@ -290,7 +298,7 @@ habitats = [1, 2]  # 1 = fechado, 2 = aberto
 # Gera as massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
 masses = 10 .^ collect(exp_start:exp_step:exp_end)
-mu_values = range(0.0001, 0.001, length = 30)
+mu_values = range(0.0001, 0.002, length = 30)  # mu fixado
 
 # Garante que a pasta existe antes das threads escreverem
 isdir("data") || mkpath("data")

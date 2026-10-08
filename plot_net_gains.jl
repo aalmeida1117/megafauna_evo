@@ -109,9 +109,9 @@ current_dir = @__DIR__
 
 # Caminhos dos arquivos JSON
 json_files = Dict(
-    "Browser" => joinpath(current_dir, "data", "browsers_dict.json"),
-    "Grazer" => joinpath(current_dir, "data", "grazers_dict.json"),
-    "Mixed Feeder" => joinpath(current_dir, "data", "mixed_dict.json")
+    "Browser" => joinpath(current_dir, "data", "browsers_mu0.00044_dict.json"),
+    "Grazer" => joinpath(current_dir, "data", "grazers_mu0.00044_dict.json"),
+    "Mixed Feeder" => joinpath(current_dir, "data", "mixed_mu0.00044_dict.json")
 )
 
 # Processar todos os arquivos
@@ -260,7 +260,7 @@ yticks_2 = symlog_ticks(y_min_2_symlog, y_max_2_symlog, linthresh)
 p1 = plot(
     xlabel = "Body mass (kg)",
     ylabel = "Mean net gain (kcal)",
-    #title = "Closed Habitat",
+    title = "Closed Habitat",
     legend = :none,
     size = (900, 700),
     grid = false,
@@ -288,7 +288,7 @@ hline!(p1, [0], color = :red, linestyle = :dash, linewidth = 2, label = "Break-e
 p2 = plot(
     xlabel = "Body mass (kg)",
     ylabel = "Mean net gain (kcal)",
-   #title = "Open Habitat",
+    title = "Open Habitat",
     legend = :none,
     size = (900, 700),
     grid = false,
@@ -316,24 +316,24 @@ hline!(p2, [0], color = :red, linestyle = :dash, linewidth = 2, label = "Break-e
 results_dir = joinpath(current_dir, "results")
 isdir(results_dir) || mkpath(results_dir)
 
-# Salvar plots individuais
-savefig(p1, joinpath(results_dir, "net_gains_closed_habitat.svg"))
-println("\n✓ Plot salvo: net_gains_closed_habitat.svg")
+# # Salvar plots individuais
+# savefig(p1, joinpath(results_dir, "net_gains_closed_habitat.svg"))
+# println("\n✓ Plot salvo: net_gains_closed_habitat.svg")
 
-savefig(p2, joinpath(results_dir, "net_gains_open_habitat.svg"))
-println("✓ Plot salvo: net_gains_open_habitat.svg")
+# savefig(p2, joinpath(results_dir, "net_gains_open_habitat.svg"))
+# println("✓ Plot salvo: net_gains_open_habitat.svg")
 
-# Combinar ambos os plots
-# plot_combined = plot(p1, p2, 
-#                      layout=(1, 2), 
-#                      size=(1800, 700),
-#                      left_margin = 12Plots.mm,
-#                      right_margin = 10Plots.mm,
-#                      bottom_margin = 10Plots.mm,
-#                      top_margin = 5Plots.mm)
+#Combinar ambos os plots
+plot_combined = plot(p1, p2, 
+                     layout=(1, 2), 
+                     size=(1800, 700),
+                     left_margin = 12Plots.mm,
+                     right_margin = 10Plots.mm,
+                     bottom_margin = 10Plots.mm,
+                     top_margin = 5Plots.mm)
 
-# savefig(plot_combined, joinpath(results_dir, "net_gains_combined.png"))
-# println("✓ Plot combinado salvo: net_gains_combined.png")
+savefig(plot_combined, joinpath(results_dir, "net_gains_combined.png"))
+println("✓ Plot combinado salvo: net_gains_combined.png")
 
 # Mostrar plot combinado
 #display(plot_combined)
