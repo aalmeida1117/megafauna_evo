@@ -66,7 +66,7 @@ function dailysim(mass, patch, fisio_type, mu)
         #                 mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
 
         res_traits_g=  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
+                        mu= mu alpha = 9 edensity = edensity_c3 zeta = 1 d_pred = 0.0002;];
         mu_g = res_traits_g[patch,1]
         alpha_g= res_traits_g[patch, 2]
         edensity_g = res_traits_g[patch, 3]
@@ -195,7 +195,7 @@ function dailysim(mass, patch, fisio_type, mu)
     else
         if fisio_type == "grazers" 
             res_traits =  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
+                        mu= mu alpha = 9 edensity = edensity_c3 zeta = 1 d_pred = 0.0002;];
 
         elseif fisio_type == "browsers" 
             res_traits =  [mu=mu alpha= 9 edensity = edensity_browse zeta= 1 d_pred = 0.0002;
