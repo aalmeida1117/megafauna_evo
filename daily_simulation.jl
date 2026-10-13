@@ -298,7 +298,7 @@ habitats = [1, 2]  # 1 = fechado, 2 = aberto
 # Gera as massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
 masses = 10 .^ collect(exp_start:exp_step:exp_end)
-mu_values = range(0.0001, 0.002, length = 30)  # mu fixado
+mu_values = range(0.00002, 0.004, length = 50)  # mu fixado
 
 # Garante que a pasta existe antes das threads escreverem
 isdir("data") || mkpath("data")
