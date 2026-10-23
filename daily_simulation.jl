@@ -23,9 +23,9 @@ function dailysim(mass, patch, fisio_type, mu)
         velocity = 0.5*velocity # Ajuste para habitat fechado
     end
 
-    if fisio_type == "grazers" && patch == 1
-        beta = 0.5*beta # Ajuste para habitat fechado
-    end
+    # if fisio_type == "grazers" && patch == 1
+    #     beta = 0.5*beta # Ajuste para habitat fechado
+    # end
     
     kcal_final = 0.0
     #active_hours = foraging_hours(mass)
@@ -56,9 +56,6 @@ function dailysim(mass, patch, fisio_type, mu)
 
     max_gut = gut_volume_g(mass)
 
-    if patch == 2 && height>2
-            height = 2# Ajuste para habitat aberto
-    end
 
     if fisio_type == "mixed"
         #res_traits p/ grazers
@@ -66,7 +63,7 @@ function dailysim(mass, patch, fisio_type, mu)
         #                 mu= mu alpha = 9 mean_edensity = mean_energy_open(mass) sd_edensity = 1 zeta = 1 d_pred = 0.0002;];
 
         res_traits_g=  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
+                        mu= mu alpha = 9 edensity = edensity_c3 zeta = 1 d_pred = 0.0002;];
         mu_g = res_traits_g[patch,1]
         alpha_g= res_traits_g[patch, 2]
         edensity_g = res_traits_g[patch, 3]
@@ -195,7 +192,7 @@ function dailysim(mass, patch, fisio_type, mu)
     else
         if fisio_type == "grazers" 
             res_traits =  [mu=mu alpha= 4.5 edensity = edensity_c3 zeta= 2.2 d_pred = 0.0002;
-                        mu= mu alpha = 9 edensity = edensity_c4 zeta = 1 d_pred = 0.0002;];
+                        mu= mu alpha = 9 edensity = edensity_c3 zeta = 1 d_pred = 0.0002;];
 
         elseif fisio_type == "browsers" 
             res_traits =  [mu=mu alpha= 9 edensity = edensity_browse zeta= 1 d_pred = 0.0002;
@@ -216,7 +213,7 @@ function dailysim(mass, patch, fisio_type, mu)
         width = reactionwidth(mass)
         height = reactionheight(mass)
 
-        if patch == 2 && height>2
+        if height>2 && fisio_type == "grazers"
             height = 2# Ajuste para habitat aberto
         end
                         #Competitor density (per reaction plane area)
