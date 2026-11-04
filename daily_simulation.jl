@@ -15,9 +15,13 @@ function dailysim(mass, patch, fisio_type, mu)
     velocity = find_velocity(mass) # Velocidade do forrageador em m/s
     beta = bite_size_allo(mass)
 
-    edensity_browse = 4.6 #kcal/g
-    edensity_c3 = 1.1385 #kcal/g
-    edensity_c4 = 0.8625 #kcal/g
+    kJ_to_kcal = 1 / 4.184
+    digest_c3 = 0.33
+    digest_browse = 0.41 #dado tirado de Hummel et al. (2025)
+    edensity_browse = 21.7 *kJ_to_kcal*digest_browse #kcal/g dado tirado de Onwuka et al. (1989)
+    edensity_c3 = 15 * kJ_to_kcal * digest_c3#kcal/g dado tirado de Yeakel et al (2020) sevilleta
+    #edensity_c4 = 0.8625 #kcal/g
+
 
     if patch == 1 
         velocity = 0.5*velocity # Ajuste para habitat fechado
@@ -295,7 +299,7 @@ habitats = [1, 2]  # 1 = fechado, 2 = aberto
 # Gera as massas como potências de 10
 exponents = collect(exp_start:exp_step:exp_end)
 masses = 10 .^ collect(exp_start:exp_step:exp_end)
-mu_values = range(0.00002, 0.004, length = 50)  # mu fixado
+mu_values = range(0.001, 0.01, length = 50)  # mu fixado
 
 # Garante que a pasta existe antes das threads escreverem
 isdir("data") || mkpath("data")
